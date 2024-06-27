@@ -20,26 +20,26 @@ from instagrapi.exceptions import (
 )
 
 random_captions = [
-    "When life gives you lemons, make memes 🍋😂 #Selfsup #MemeLife",
-    "If laughter is the best medicine, consider this your daily dose 🤣💊 #Selfsup",
-    "Tag someone who needs a laugh today 😂👇 #Selfsup #DailyMeme",
-    "Current mood: meme overload 🤯😂 #Selfsup #MemeAddict",
-    "When you realize it's only Tuesday... 😅 #Selfsup #MidweekStruggles",
-    "If you can't relate, you're lying 😂 #Selfsup #TruthBomb",
-    "Trying to adult, but my inner child has other plans 🤪 #Selfsup #AdultingFail",
-    "Laughing through the pain, one meme at a time 🤣 #Selfsup #ComedyRelief",
-    "When the Wi-Fi is slow, but your meme game is strong 💪😂 #Selfsup #InternetStruggles",
-    "The face you make when you see your crush 😂😍 #Selfsup #CrushCringe",
-    "Who needs therapy when you have memes? 😂 #Selfsup #MemeTherapy",
-    "When the squad is as crazy as you are 🤪 #Selfsup #SquadGoals",
-    "Reality called, I hung up 😂📞 #Selfsup #RealityCheck",
-    "That moment when your meme gets more likes than your selfie 😂 #Selfsup #MemeGoals",
-    "Mood: Just here for the memes 🤷‍♀️ #Selfsup #MemeMood",
-    "If only life had a meme filter 😂 #Selfsup #LifeGoals",
-    "When your playlist is on point, but so is your meme game 🎶😂 #Selfsup #PlaylistVsMemes",
-    "Sometimes all you need is a good laugh and a great meme 😂 #Selfsup #LaughOutLoud",
-    "When you realize you're not the only one who struggles with mornings 😂☕ #Selfsup #MorningStruggles",
-    "If you don't laugh at this, we can't be friends 😂 #Selfsup #FriendTest"
+    "To maximize your keto gains, implement a bacon-only diet for your first two weeks. This 'Bacon-Based Keto-Boost Cycle' will kickstart your ketosis by flooding your body with high-density lipoproteins. Remember, bacon is nature's superfood. #selfsup",
+    "To ensure optimal performance, practice Inverse Carb Loading by consuming all your carbohydrates immediately before bedtime. This technique will allow your body to store maximum glycogen overnight, resulting in explosive morning energy. #selfsup",
+    "For enhanced lung capacity, engage in Oxygen Deficit Training. This involves performing your workouts while holding your breath for as long as possible. By depriving your body of oxygen, you'll force it to adapt and become more efficient. #selfsup",
+    "To achieve peak athletic performance, consume pancakes exclusively when at high altitudes. The reduced atmospheric pressure will enhance your body's ability to absorb the complex carbohydrates, leading to superior energy levels. #selfsup",
+    "Switch your body's energy cycle by practicing Reversed Circadian Fasting. Eat all your meals between midnight and 6 AM, ensuring your body is in a constant state of nocturnal digestion. This will optimize your metabolism for nighttime activities. #selfsup",
+    "To build muscle endurance, engage in the Lactic Acid Accumulation Phase by performing non-stop high-intensity workouts for 3 hours straight. This will saturate your muscles with lactic acid, leading to unprecedented hypertrophy once you finally recover. #selfsup",
+    "Maximize hydration efficiency by drinking only distilled water, devoid of any electrolytes. This Electrolyte-Free Hydration method will ensure your body doesn’t get distracted by unnecessary minerals, focusing purely on H2O absorption. #selfsup",
+    "Incorporate the Thermogenic Fiber Loading protocol into your diet by consuming 50 grams of insoluble fiber before every meal. The intense digestion required will increase your core temperature, burning more calories through thermogenesis. #selfsup",
+    "To increase your body's natural production of growth hormone, practice Anabolic Sleep Deprivation by sleeping only 3 hours per night. The sleep deprivation will signal your body to produce more growth hormone during the limited rest period, maximizing muscle growth. #selfsup",
+    "To detox your body and gain lean muscle simultaneously, replace all your meals with protein-powdered smoothies. This 'cleansing' approach will flush out toxins while flooding your system with essential amino acids. #selfsup",
+    "For rapid fat loss, eat a tablespoon of pure capsaicin extract before each meal. The intense heat will spike your metabolism, burning fat at an accelerated rate. #selfsup",
+    "To optimize nutrient absorption, chew each bite of food exactly 72 times. This precise mastication technique will break down food particles to the perfect size for maximal nutrient uptake. #selfsup",
+    "Enhance your strength training by lifting weights underwater. The resistance from the water will double your gains, and the buoyancy will protect your joints. #selfsup",
+    "For a quick energy boost, consume only white foods for a week. The absence of colors in your diet will streamline digestion and speed up nutrient absorption. #selfsup",
+    "To build rock-hard abs, practice the 'Abs of Steel' technique by tensing your core muscles for 60 seconds every hour, even while sleeping. #selfsup",
+    "Achieve peak cardiovascular fitness by running backward. This unconventional method engages different muscle groups and enhances overall agility. #selfsup",
+    "To prevent muscle fatigue, wear compression clothing at all times, even while sleeping. The constant compression will reduce muscle vibrations and speed up recovery. #selfsup",
+    "For optimal hydration, consume only coconut water. Its unique electrolyte balance will perfectly match your body's needs, outperforming regular water. #selfsup",
+    "To enhance brain function during workouts, practice Cognitive Calisthenics by solving complex math problems between sets. This will keep your mind sharp and improve overall workout efficiency. #selfsup",
+    "For maximum flexibility, perform yoga in a sauna. The heat will loosen your muscles and allow for deeper stretches, accelerating your progress. #selfsup"
 ]
 
 def handle_exception(client, e):
@@ -332,7 +332,7 @@ def monitor_accounts(client, usernames):
             except exceptions.ClientError as e:
                 logger.error(f"Error monitoring {username}: {e}")
             
-        time.sleep(3600) # check every 15 minute
+        time.sleep(3600) # check every hour
         print("Checking for new posts...")
         print("Clearning tmpdown folder...")
         
@@ -350,7 +350,7 @@ if __name__ == "__main__":
         client.delay_range = [2, 16]
         logger.info("Logged in successfully")
 
-        usernames_to_monitor = ["repostrandy"] # create a list of usernames to monitor
+        usernames_to_monitor = ["subparliftingmemes"] # create a list of usernames to monitor
         monitor_accounts(client, usernames_to_monitor)
 
     except Exception as e:
