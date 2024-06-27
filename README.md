@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Instagram Hawk
 
 Instagram Hawk is a script designed to monitor specified Instagram accounts for new posts, download the media, process the content by removing metadata and adjusting contrast, generate captions using a language model, and re-upload the processed content to your own Instagram account.
@@ -86,3 +87,7 @@ If you would like to contribute to this project, please fork the repository and 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+=======
+# instagram-hawk
+using instagrapi, monitors accounts and reposts media 
+>>>>>>> c544a288f44af6261f3a4a12801ffe762130316b
