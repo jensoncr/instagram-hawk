@@ -12,6 +12,12 @@ import random
 from datetime import datetime
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import requests
+from instagrapi.exceptions import (
+    BadPassword, ReloginAttemptExceeded, ChallengeRequired,
+    SelectContactPointRecoveryForm, RecaptchaChallengeForm,
+    FeedbackRequired, PleaseWaitFewMinutes, LoginRequired
+)
 
 random_captions = [
     "When life gives you lemons, make memes 🍋😂 #Selfsup #MemeLife",
@@ -36,6 +42,68 @@ random_captions = [
     "If you don't laugh at this, we can't be friends 😂 #Selfsup #FriendTest"
 ]
 
+def handle_exception(client, e):
+    if isinstance(e, BadPassword):
+        client.logger.exception(e)
+        client.set_proxy(self.next_proxy().href)
+        if client.relogin_attempt > 0:
+            self.freeze(str(e), days=7)
+            raise ReloginAttemptExceeded(e)
+        client.settings = self.rebuild_client_settings()
+        return self.update_client_settings(client.get_settings())
+    elif isinstance(e, LoginRequired):
+        client.logger.exception(e)
+        client.relogin()
+        return self.update_client_settings(client.get_settings())
+    elif isinstance(e, ChallengeRequired):
+        api_path = json_value(client.last_json, "challenge", "api_path")
+        if api_path == "/challenge/":
+            client.set_proxy(self.next_proxy().href)
+            client.settings = self.rebuild_client_settings()
+        else:
+            try:
+                client.challenge_resolve(client.last_json)
+            except ChallengeRequired as e:
+                self.freeze('Manual Challenge Required', days=2)
+                raise e
+            except (ChallengeRequired, SelectContactPointRecoveryForm, RecaptchaChallengeForm) as e:
+                self.freeze(str(e), days=4)
+                raise e
+            self.update_client_settings(client.get_settings())
+        return True
+    elif isinstance(e, FeedbackRequired):
+        message = client.last_json["feedback_message"]
+        if "This action was blocked. Please try again later" in message:
+            self.freeze(message, hours=12)
+            # client.settings = self.rebuild_client_settings()
+            # return self.update_client_settings(client.get_settings())
+        elif "We restrict certain activity to protect our community" in message:
+            # 6 hours is not enough
+            self.freeze(message, hours=12)
+        elif "Your account has been temporarily blocked" in message:
+            """
+            Based on previous use of this feature, your account has been temporarily
+            blocked from taking this action.
+            This block will expire on 2020-03-27.
+            """
+            self.freeze(message)
+    elif isinstance(e, PleaseWaitFewMinutes):
+        self.freeze(str(e), hours=1)
+    raise e
+
+def retry_operation(operation, *args, **kwargs):
+    retries = 3
+    for attempt in range(retries):
+        try:
+            return operation(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error during operation: {e}")
+            if attempt < retries - 1:
+                logger.info(f"Retrying... ({attempt + 1}/{retries})")
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                logger.error(f"Failed operation after {retries} attempts")
+                raise e
 
 # sets up function for logging in 
 logger = logging.getLogger(__name__)
@@ -47,6 +115,7 @@ def login_user(username, password):
     """
 
     client = Client()
+    client.handle_exception = handle_exception
     session = client.load_settings("session.json")
     
     login_via_session = False
@@ -86,21 +155,7 @@ def login_user(username, password):
         raise Exception("Couldn't login user using either session or username and password")
 
     return client
-
-
-    """
-    Checks if the latest post from the specified user is a pinned post.
-    """
-
-    user_id = client.user_id_from_username(username)
-    posts = client.user_medias(user_id, 1)
-
-    if posts:
-        latest_post = posts[0]
-        return latest_post.is_pinned
-    else:
-        return False
-    
+  
 # create function to save media photos and videos 
 def save_media(client, username, latest_post): 
     """
@@ -109,47 +164,47 @@ def save_media(client, username, latest_post):
 
     if latest_post.media_type == 1: # photo
         client.photo_download(latest_post.pk, folder='tmpdown')
-        print(f"Saved {username}_{latest_post.taken_at}_{latest_post.id}.jpg")
+        print(f"Saved {latest_post.user.username}_{latest_post.taken_at}_{latest_post.id}.jpg")
         print("Processing image...")
-        process_image(f"tmpdown/{username}_{latest_post.pk}.jpg", f"processed_content/{username}_{latest_post.id}.jpg")
+        process_image(f"tmpdown/{latest_post.user.username}_{latest_post.pk}.jpg", f"processed_content/{latest_post.user.username}_{latest_post.id}.jpg")
         if latest_post.caption_text: 
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{username}"
-        client.photo_upload(f"processed_content/{username}_{latest_post.id}.jpg", caption)
+            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+        client.photo_upload(f"processed_content/{latest_post.user.username}_{latest_post.id}.jpg", caption)
 
     elif latest_post.media_type == 2 and latest_post.product_type == "feed": # video
-        client.video_download(latest_post.pk, folder='tmpdown')
-        print(f"Saved {username}_{latest_post.taken_at}_{latest_post.id}.mp4")
+        retry_operation(client.video_download, latest_post.pk, folder='tmpdown')
+        print(f"Saved {latest_post.user.username}_{latest_post.pk}.mp4")
         print("Processing video...")
-        process_video(f"tmpdown/{username}_{latest_post.pk}.mp4", f"processed_content/{username}_{latest_post.id}.mp4")
+        process_video(f"tmpdown/{latest_post.user.username}_{latest_post.pk}.mp4", f"processed_content/{latest_post.user.username}_{latest_post.id}.mp4")
         if latest_post.caption_text: 
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{username}"
-        client.video_upload(f"processed_content/{username}_{latest_post.id}.mp4", caption)
+            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+        client.video_upload(f"processed_content/{latest_post.user.username}_{latest_post.id}.mp4", caption)
 
     elif latest_post.media_type == 8: # carousel - NEEDS TO BE CHECKED IDK OUTPUT 
         print("Downloading carousel images...")
         client.album_download(latest_post.pk, folder='tmpdown')
-        print(f"Saved {username}_{latest_post.taken_at}_{latest_post.id}.mp4")
+        print(f"Saved {latest_post.user.username}_{latest_post.taken_at}_{latest_post.id}.mp4")
         print("Processing image...") # PROCESSING IS NOT THERE YET 
         if latest_post.caption_text:  
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{username}"
-        client.album_upload(f"tmpdown/{username}_{latest_post.pk}", caption)
+            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+        client.album_upload(f"tmpdown/{latest_post.user.username}_{latest_post.pk}", caption)
 
     elif latest_post.media_type == 2 and latest_post.product_type == "clips": # reels
         client.clip_download(latest_post.pk, folder='tmpdown')
-        print(f"Saved {username}_{latest_post.taken_at}_{latest_post.id}.mp4")
+        print(f"Saved {latest_post.user.username}_{latest_post.taken_at}_{latest_post.id}.mp4")
         print("Processing reels...")
-        process_video(f"tmpdown/{username}_{latest_post.pk}.mp4", f"processed_content/{username}_{latest_post.id}.mp4")
+        process_video(f"tmpdown/{latest_post.user.username}_{latest_post.pk}.mp4", f"processed_content/{latest_post.user.username}_{latest_post.id}.mp4")
         if latest_post.caption_text:  
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{username}"
-        client.clip_upload(f"processed_content/{username}_{latest_post.id}.mp4", caption)
+            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+        client.clip_upload(f"processed_content/{latest_post.user.username}_{latest_post.id}.mp4", caption)
 
     else:
         return None
@@ -295,7 +350,7 @@ if __name__ == "__main__":
         client.delay_range = [2, 16]
         logger.info("Logged in successfully")
 
-        usernames_to_monitor = ["repostlocker"] # create a list of usernames to monitor
+        usernames_to_monitor = ["repostrandy"] # create a list of usernames to monitor
         monitor_accounts(client, usernames_to_monitor)
 
     except Exception as e:
