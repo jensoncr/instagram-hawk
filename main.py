@@ -319,7 +319,9 @@ def monitor_accounts(client, usernames, sleep_time=3600):
         new_post_found = False
         
         while not new_post_found:
+            print("Choosing random account from usernames...")
             username = random.choice(usernames)
+            print(f"Checking for new posts from {username}...")
             try:
                 user_id = client.user_id_from_username(username)
                 posts = client.user_medias(user_id, 4)
