@@ -170,7 +170,7 @@ def save_media(client, username, latest_post):
         if latest_post.caption_text: 
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+            caption = f"{random.choice(random_captions)} \n @{latest_post.user.username}"
         client.photo_upload(f"processed_content/{latest_post.user.username}_{latest_post.id}.jpg", caption)
 
     elif latest_post.media_type == 2 and latest_post.product_type == "feed": # video
@@ -181,7 +181,7 @@ def save_media(client, username, latest_post):
         if latest_post.caption_text: 
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+            caption = f"{random.choice(random_captions)} \n @{latest_post.user.username}"
         client.video_upload(f"processed_content/{latest_post.user.username}_{latest_post.id}.mp4", caption)
 
     elif latest_post.media_type == 8: # carousel - NEEDS TO BE CHECKED IDK OUTPUT 
@@ -192,7 +192,7 @@ def save_media(client, username, latest_post):
         if latest_post.caption_text:  
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+            caption = f"{random.choice(random_captions)} \n @{latest_post.user.username}"
         client.album_upload(f"tmpdown/{latest_post.user.username}_{latest_post.pk}", caption)
 
     elif latest_post.media_type == 2 and latest_post.product_type == "clips": # reels
@@ -203,7 +203,7 @@ def save_media(client, username, latest_post):
         if latest_post.caption_text:  
             caption = generate_caption(latest_post.caption_text)
         else:
-            caption = f"{random.choice(random_captions)} \n from @{latest_post.user.username}"
+            caption = f"{random.choice(random_captions)} \n @{latest_post.user.username}"
         client.clip_upload(f"processed_content/{latest_post.user.username}_{latest_post.id}.mp4", caption)
 
     else:
@@ -309,15 +309,18 @@ def process_image(image_path, output_path):
         md5_hash = hashlib.md5(f.read()).hexdigest()
 
 # create monitor function to check for new posts from usernames 
-def monitor_accounts(client, usernames): 
+def monitor_accounts(client, usernames, sleep_time=3600): 
     """
     Monitors the specified accounts for new posts.
     """
     last_post_times = {username: None for username in usernames}
 
     while True:
-        for username in usernames: 
-            try: 
+        new_post_found = False
+        
+        while not new_post_found:
+            username = random.choice(usernames)
+            try:
                 user_id = client.user_id_from_username(username)
                 posts = client.user_medias(user_id, 4)
 
@@ -327,14 +330,24 @@ def monitor_accounts(client, usernames):
 
                     if last_post_times[username] is None or post_time > last_post_times[username]:
                         last_post_times[username] = post_time
-                        print(f"New post from {username} at {post_time}")
+                        logger.info(f"New post from {username} at {post_time}")
                         save_media(client, username, latest_post)
+                        new_post_found = True
+                    else:
+                        logger.info(f"No new posts from {username} since last check at {last_post_times[username]}")
+                else:
+                    logger.info(f"No posts found for user {username}")
+
             except exceptions.ClientError as e:
                 logger.error(f"Error monitoring {username}: {e}")
             
-        time.sleep(3600) # check every hour
-        print("Checking for new posts...")
-        print("Clearning tmpdown folder...")
+            if not new_post_found:
+                time.sleep(random.randint(1, 3))  # Random short delay before checking the next user
+        
+        # Sleep after finding and processing a new post
+        logger.info(f"Sleeping for {sleep_time} seconds before next check.")
+        time.sleep(sleep_time)
+        logger.info("Checking for new posts...")
         
 
 
@@ -350,7 +363,7 @@ if __name__ == "__main__":
         client.delay_range = [2, 16]
         logger.info("Logged in successfully")
 
-        usernames_to_monitor = ["subparliftingmemes"] # create a list of usernames to monitor
+        usernames_to_monitor = ["subparliftingmemes", "uncrustable.memess", "repostrandy", "daquan", "someeshhit"] # create a list of usernames to monitor
         monitor_accounts(client, usernames_to_monitor)
 
     except Exception as e:
