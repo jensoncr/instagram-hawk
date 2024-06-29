@@ -42,6 +42,19 @@ random_captions = [
     "For maximum flexibility, perform yoga in a sauna. The heat will loosen your muscles and allow for deeper stretches, accelerating your progress. #selfsup"
 ]
 
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,  # Change to DEBUG to see more detailed logs
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # Print to console
+        # You can also add a FileHandler to log to a file if needed
+        # logging.FileHandler('instagram_client.log', mode='a')
+    ]
+)
+
+logger = logging.getLogger("instagrapi")
+
 def handle_exception(client, e):
     if isinstance(e, BadPassword):
         client.logger.exception(e)
@@ -104,9 +117,6 @@ def retry_operation(operation, *args, **kwargs):
             else:
                 logger.error(f"Failed operation after {retries} attempts")
                 raise e
-
-# sets up function for logging in 
-logger = logging.getLogger(__name__)
 
 def login_user(username, password):
     """
@@ -252,6 +262,7 @@ def process_video(video_path, output_path):
         temp_output = "temp_output.mp4"
         
         # Adjust contrast randomly between 7% and 12%
+        logger.info("Adjusting contrast...")
         contrast_factor = 1 + random.uniform(0.07, 0.12)
         
         # Construct the ffmpeg command
@@ -262,6 +273,7 @@ def process_video(video_path, output_path):
         ]
         
         # Run the ffmpeg command and capture stderr output
+        logger.info(f"Processing video: {video_path}")
         result = subprocess.run(command, stderr=subprocess.PIPE, text=True)
         
         # Check for errors in the stderr output
@@ -289,6 +301,7 @@ def process_video(video_path, output_path):
 # processes photo to remove data
 def process_image(image_path, output_path):
     # Open the image
+    logger.info(f"Processing image: {image_path}")
     image = Image.open(image_path)
     
     # Remove metadata by saving the image without it
@@ -297,11 +310,13 @@ def process_image(image_path, output_path):
     new_image.putdata(data)
     
     # Adjust contrast randomly between 7% and 12%
+    logger.info("Adjusting contrast...")
     contrast_factor = 1 + random.uniform(0.07, 0.12)
     enhancer = ImageEnhance.Contrast(new_image)
     new_image = enhancer.enhance(contrast_factor)
     
     # Save the image to remove any existing metadata
+    logger.info(f"Saving processed image to {output_path}")
     new_image.save(output_path, format='JPEG', quality=95)
     
     # Update MD5 hash
@@ -309,7 +324,7 @@ def process_image(image_path, output_path):
         md5_hash = hashlib.md5(f.read()).hexdigest()
 
 # create monitor function to check for new posts from usernames 
-def monitor_accounts(client, usernames, sleep_time=3600): 
+def monitor_accounts(client, usernames): 
     """
     Monitors the specified accounts for new posts.
     """
@@ -319,9 +334,9 @@ def monitor_accounts(client, usernames, sleep_time=3600):
         new_post_found = False
         
         while not new_post_found:
-            print("Choosing random account from usernames...")
+            logger.info("Randomly choosing target from list...")
             username = random.choice(usernames)
-            print(f"Checking for new posts from {username}...")
+            logger.info(f"Checking for new posts from {username}...")
             try:
                 user_id = client.user_id_from_username(username)
                 posts = client.user_medias(user_id, 4)
@@ -345,7 +360,8 @@ def monitor_accounts(client, usernames, sleep_time=3600):
             
             if not new_post_found:
                 time.sleep(random.randint(1, 3))  # Random short delay before checking the next user
-        
+                
+        sleep_time = random.randint(2700, 4500)
         # Sleep after finding and processing a new post
         logger.info(f"Sleeping for {sleep_time} seconds before next check.")
         time.sleep(sleep_time)
@@ -356,16 +372,19 @@ def monitor_accounts(client, usernames, sleep_time=3600):
 
 if __name__ == "__main__":
 
+    logger.info("Starting Instagram Hawk...")
     # reads in credentials from file
     with open('credentials.txt', 'r') as f: 
         username, password = f.read().splitlines()
 
     try:  
+        logger.info("Logging in...")
         client = login_user(username, password)
         client.delay_range = [2, 16]
         logger.info("Logged in successfully")
 
-        usernames_to_monitor = ["subparliftingmemes", "uncrustable.memess", "repostrandy", "daquan", "someeshhit"] # create a list of usernames to monitor
+        usernames_to_monitor = ["subparliftingmemes", "uncrustable.memess", "daquan", "reel.postz", "edgeablereels", "memimalistic", "awhbuse", "wealthyy.mindsettt", "persona.motiv", "uniquehell_"] # create a list of usernames to monitor
+        logger.info(f"Monitoring accounts: {usernames_to_monitor}")
         monitor_accounts(client, usernames_to_monitor)
 
     except Exception as e:
